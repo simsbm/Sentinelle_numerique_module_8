@@ -1,0 +1,7 @@
+# Dépendances du hash-service — Sentinelle Numérique Groupe 8
+
+# Framework web asynchrone léger pour exposer l'API REST
+fastapi==0.111.0
+
+# Serveur ASGI pour lancer l'application FastAPI
+uvicorn[standard]==0.29.0

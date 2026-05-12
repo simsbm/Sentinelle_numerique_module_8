@@ -21,12 +21,14 @@ app = FastAPI(
 
 class HashRequest(BaseModel):
     rapport_json: dict
+    media_id: str
 
 
 
 # Schéma de la réponse retournée
 
 class HashResponse(BaseModel):
+    media_id: str
     hash: str        
     algorithm: str   
 
@@ -57,7 +59,11 @@ def calculer_hash(body: HashRequest) -> HashResponse:
     # Formatage du résultat : "sha256:<hex>"
     hash_final: str = f"sha256:{empreinte.hexdigest()}"
 
-    return HashResponse(hash=hash_final, algorithm="SHA-256")
+    return HashResponse(
+        media_id=body.media_id,
+        hash=hash_final,
+        algorithm="SHA-256"
+    )
 
 
 # Route de santé 
@@ -66,3 +72,4 @@ def calculer_hash(body: HashRequest) -> HashResponse:
 def health_check():
     """Vérifie que le service est opérationnel."""
     return {"status": "ok", "service": "hash-service"}
+

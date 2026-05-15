@@ -14,6 +14,12 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 # Connexion à Ganache
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
+if not w3.is_connected():
+    raise RuntimeError(
+        "Impossible de se connecter à la blockchain"
+        "Vérifiez que Ganache est en cours d'exécution et que l'URL RPC est correcte."
+        )
+
 # Charger ABI
 with open("abi.json") as f:
     abi = json.load(f)
@@ -53,3 +59,12 @@ def verify(media_id: str, hash: str):
     hash_bytes = bytes.fromhex(hash.replace("0x", ""))
     valid = contract.functions.verifierMedia(media_id, hash_bytes).call()
     return {"valid": valid}
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "Ledger Service",
+        "blockchain_connected": w3.is_connected()
+        }

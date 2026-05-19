@@ -11,7 +11,7 @@ from fastapi import HTTPException
 # Initialisation de l'application FastAPI
 
 app = FastAPI(
-    title="Hash Service — Sentinelle Numérique",
+    title="Hash Service Sentinelle Numérique",
     description="Calcule l'empreinte SHA-256 d'un rapport JSON .",
     version="1.0.0",
 )
@@ -38,11 +38,14 @@ class HashResponse(BaseModel):
 @app.post("/hash", response_model=HashResponse)
 def calculer_hash(body: HashRequest) -> HashResponse:
     
+    #Verifier que le rapport n'est pas vide
     if not body.rapport_json:
-        raise HTTPException(status_code=400,
-         detail="Le champ 'rapport_json' ne peut pas être vide.")
+        raise HTTPException(
+            status_code=400,
+            detail="Le champ 'rapport_json' ne peut pas être vide.")
     
     # tri alphabétique des clés, séparateurs compacts
+
     json_canonique: str = json.dumps(
         body.rapport_json,
         sort_keys=True,       

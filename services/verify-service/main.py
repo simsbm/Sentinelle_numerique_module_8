@@ -45,7 +45,7 @@ async def verify_media(media_id: str, body: VerifyRequest):
     logger.info(f"Vérification demandée pour media_id={media_id}")
 
     # calcul du hash du rapport JSON via hash-service
-    hash_actuel = await _appeler_hash_service(body.rapport_json)
+    hash_actuel = await _appeler_hash_service(body.rapport_json, media_id)
 
     
     # Comparer le hash avec la blockchain via ledger-service
@@ -53,7 +53,7 @@ async def verify_media(media_id: str, body: VerifyRequest):
     resultat = await _appeler_ledger_service(media_id, hash_actuel)
 
     # Reponse
-    if resultat.get("match"):
+    if resultat.get("valid"):
         logger.info(f"✅ media_id={media_id} — Média AUTHENTIQUE")
         return VerifyResponse(
             valid=True,
@@ -71,7 +71,7 @@ async def verify_media(media_id: str, body: VerifyRequest):
         )
 
 
-async def _appeler_hash_service(rapport_json: dict) -> str:
+async def _appeler_hash_service(rapport_json: dict, media_id: str) -> str:
     
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
@@ -136,5 +136,4 @@ async def _appeler_ledger_service(media_id: str, hash_actuel: str) -> dict:
 
 @app.get("/health")
 async def health_check():
-    
     return {"status": "ok", "service": "verify-service", "port": 8083}

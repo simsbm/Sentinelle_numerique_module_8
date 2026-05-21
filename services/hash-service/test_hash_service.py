@@ -4,7 +4,7 @@ from main import app
 client = TestClient(app)
 
 #teste de boite noire
-def hash_nominal():
+def test_hash_nominal():
     response = client.post(
         "/hash",
         json={
@@ -19,7 +19,7 @@ def hash_nominal():
     assert len(data["hash"]) == 71
 
 #test de cas limite
-def hash_rapport_vide():
+def test_hash_rapport_vide():
     response = client.post(
         "/hash",
         json={

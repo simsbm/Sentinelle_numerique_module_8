@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinelle Numérique — Dashboard G8</title>
+
+  <!-- Google Fonts : police utilisée pour le look "technique" -->
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Notre feuille de style séparée -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="wrapper">
+
+    <!-- =====================================================
+         EN-TÊTE DE LA PAGE
+         Affiche le nom du projet, le groupe et la spécialisation
+    ====================================================== -->
+    <header>
+      <div class="header-top">
+        <!-- Petit point animé qui "pulse" pour montrer que le système est actif -->
+        <span class="logo-dot"></span>
+        <h1>Sentinelle <span>Numérique</span></h1>
+      </div>
+      <p class="subtitle"> Module Blockchain d'Intégrité </p>
+    </header>
+
+
+    <!-- =====================================================
+         ONGLETS DE NAVIGATION
+         Deux onglets : Certifier | Vérifier
+         Le JavaScript dans script.js gère le basculement
+    ====================================================== -->
+    <div class="tabs">
+      <!-- onclick appelle switchTab() défini dans script.js -->
+      <button class="tab active" onclick="switchTab('certify')">  Certifier un média</button>
+      <button class="tab"        onclick="switchTab('verify')">  Vérifier un média</button>
+    </div>
+
+
+    <!-- =====================================================
+         PANNEAU 1 : CERTIFICATION
+         Séquence 1 du document : l'utilisateur soumet un média
+         → le Dashboard appelle POST /api/certifier
+         → reçoit en retour : tx_id, hash, score, timestamp
+    ====================================================== -->
+    <div class="panel active" id="panel-certify">
+
+      
+
+      <div class="card">
+        <div class="card-title">Fichier média à certifier</div>
+
+        <!-- Zone de dépôt de fichier (drag & drop ou clic) -->
+        <div class="upload-zone" id="drop-certify">
+          <input type="file" id="file-certify"
+                 accept="image/*,video/*,audio/*,.pdf,.txt"
+                 onchange="onFileSelected('certify')">
+          <span class="upload-icon">⬡</span>
+          <p class="upload-text">Glissez un fichier ou cliquez pour parcourir</p>
+          <p class="upload-hint">Images · Vidéos · Audio · PDF · Texte</p>
+          <p class="file-selected" id="file-certify-name"></p>
+        </div>
+
+        <!-- Score fourni normalement par G1-G7, saisi manuellement pour la démo -->
+        <div class="field-group">
+          <label class="field-label" for="score-input">
+            Score d'analyse
+          </label>
+          <input class="field-input" type="number" id="score-input"
+                 min="0" max="1" step="0.01"
+                 placeholder="valeur entre 0 et 1">
+        </div>
+
+        <!-- Bouton qui déclenche submitCertify() dans script.js -->
+        <button class="btn" id="btn-certify" onclick="submitCertify()">
+           Lancer la certification
+        </button>
+
+        <!-- Loader caché par défaut, visible pendant l'appel API -->
+        <div class="loader" id="loader-certify">
+          <div class="spinner"></div>
+          <span>Calcul SHA-256 → inscription blockchain en cours…</span>
+        </div>
+      </div>
+
+      <!-- Résultat de certification : tx_id, hash, score, timestamp -->
+      <div class="result" id="result-certify">
+        <div class="result-header" id="result-certify-header"></div>
+        <div class="result-body"   id="result-certify-body"></div>
+      </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         PANNEAU 2 : VÉRIFICATION
+         Séquence 2 du document
+         → appelle POST /api/verifier
+         → reçoit : { valide: true/false, hash, timestamp, tx_id }
+    ====================================================== -->
+    <div class="panel" id="panel-verify">
+
+    
+
+      <div class="card">
+        <div class="card-title">Fichier média à vérifier</div>
+
+        <div class="upload-zone" id="drop-verify">
+          <input type="file" id="file-verify"
+                 accept="image/*,video/*,audio/*,.pdf,.txt"
+                 onchange="onFileSelected('verify')">
+          <span class="upload-icon">◈</span>
+          <p class="upload-text">Glissez un fichier ou cliquez pour parcourir</p>
+          <p class="upload-hint">Images · Vidéos · Audio · PDF · Texte</p>
+          <p class="file-selected" id="file-verify-name"></p>
+        </div>
+
+        <button class="btn verify" id="btn-verify" onclick="submitVerify()">
+            Vérifier l'intégrité
+        </button>
+
+        <div class="loader" id="loader-verify">
+          <div class="spinner"></div>
+          <span>Recalcul SHA-256 → interrogation blockchain en cours…</span>
+        </div>
+      </div>
+
+      <div class="result" id="result-verify">
+        <div class="result-header" id="result-verify-header"></div>
+        <div class="result-body"   id="result-verify-body"></div>
+      </div>
+
+    </div>
+
+
+    <!-- PIED DE PAGE -->
+    <footer>
+      <span>SENTINELLE NUMÉRIQUE</span>
+      <span>SUP'PTIC · 2026</span>
+    </footer>
+
+  </div>
+
+  <!-- Script chargé EN DERNIER : le HTML doit exister avant que JS s'exécute -->
+  <script src="script.js"></script>
+
+</body>
+</html>

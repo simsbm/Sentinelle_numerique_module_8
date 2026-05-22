@@ -34,7 +34,7 @@
   --text:      #050a0e;   /* gilssez un fichier */
   --muted:     #0a506c;   /* Score d'analyse */
   --font-mono: 'Share Tech Mono', monospace;  /* police à chasse fixe (technique) */
-  --font-ui:   'Rajdhani', sans-serif;        /* police principale (titres, boutons) */
+  --font-ui:   'Times New Roman', Times, serif;        /* police principale (titres, boutons) */
 }
 
 
@@ -556,6 +556,125 @@ h1 span { color: var(--accent); }
   font-weight: normal;
 }
 
+
+/* ================================================================
+   15. HISTORIQUE
+   Journal des opérations — onglet ⧖
+================================================================ */
+.hist-empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.hist-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hist-filter {
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hist-filter.active,
+.hist-filter:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,0.07);
+}
+
+.hist-clear {
+  margin-left: auto;
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid rgba(255,68,102,0.3);
+  border-radius: 3px;
+  color: var(--danger);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hist-clear:hover { background: rgba(255,68,102,0.08); }
+
+.hist-count {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.hist-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+.hist-item-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.hist-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  padding: 3px 9px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hist-badge.certify      { background: rgba(0,212,255,0.1);  color: var(--accent);  border: 1px solid rgba(0,212,255,0.25); }
+.hist-badge.verify-ok    { background: rgba(0,255,157,0.1);  color: var(--accent2); border: 1px solid rgba(0,255,157,0.25); }
+.hist-badge.verify-fail  { background: rgba(255,68,102,0.1); color: var(--danger);  border: 1px solid rgba(255,68,102,0.25); }
+.hist-badge.hist-error   { background: rgba(255,68,102,0.1); color: var(--danger);  border: 1px solid rgba(255,68,102,0.25); }
+
+.hist-file {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.hist-time {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.hist-detail {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.hist-hash {
+  color: var(--accent);
+  word-break: break-all;
+  margin-bottom: 4px;
+}
 
 /* ================================================================
    14. PIED DE PAGE

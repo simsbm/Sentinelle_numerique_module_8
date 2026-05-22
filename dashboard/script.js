@@ -36,10 +36,15 @@ function switchTab(name) {
   const tabs = document.querySelectorAll('.tab');
   tabs[0].classList.toggle('active', name === 'certify');
   tabs[1].classList.toggle('active', name === 'verify');
+  tabs[2].classList.toggle('active', name === 'history');
 
   // Affiche le bon panneau
   document.getElementById('panel-certify').classList.toggle('active', name === 'certify');
   document.getElementById('panel-verify').classList.toggle('active', name === 'verify');
+  document.getElementById('panel-history').classList.toggle('active', name === 'history');
+
+  // Rafraîchit l'affichage de l'historique quand on y accède
+  if (name === 'history') renderHistory();
 }
 
 
@@ -113,16 +118,20 @@ async function submitCertify() {
     if (reponse.ok) {
       // Succès : affiche tx_id, hash, score, timestamp
       afficherCertificationReussie(donnees);
+      ajouterHistorique({ type: 'certify', succes: true, fichier: fileInput.files[0].name, donnees });
     } else {
       // Erreur métier retournée par le serveur
       afficherCertificationEchec(donnees.message || 'Erreur serveur inconnue.');
+      ajouterHistorique({ type: 'certify', succes: false, fichier: fileInput.files[0].name, message: donnees.message || 'Erreur serveur' });
     }
 
   } catch (erreur) {
     // Le backend n'est pas encore disponible → mode démo
     // SUPPRIMER ce bloc catch quand le vrai backend est prêt
     console.warn('[MODE DEMO] Backend non disponible, simulation activée.');
-    afficherCertificationReussie(simulerReponseCertification(fileInput.files[0].name, score));
+    const donnees = simulerReponseCertification(fileInput.files[0].name, score);
+    afficherCertificationReussie(donnees);
+    ajouterHistorique({ type: 'certify', succes: true, fichier: fileInput.files[0].name, donnees });
 
   } finally {
     // finally s'exécute TOUJOURS (succès ou erreur)
@@ -166,14 +175,18 @@ async function submitVerify() {
 
     if (reponse.ok) {
       afficherResultatVerification(donnees);
+      ajouterHistorique({ type: 'verify', succes: true, fichier: fileInput.files[0].name, donnees });
     } else {
       afficherErreurVerification(donnees.message || 'Erreur serveur inconnue.');
+      ajouterHistorique({ type: 'verify', succes: false, fichier: fileInput.files[0].name, message: donnees.message || 'Erreur serveur' });
     }
 
   } catch (erreur) {
     // Mode démo si le backend n'est pas prêt
     console.warn('[MODE DEMO] Backend non disponible, simulation activée.');
-    afficherResultatVerification(simulerReponseVerification());
+    const donnees = simulerReponseVerification();
+    afficherResultatVerification(donnees);
+    ajouterHistorique({ type: 'verify', succes: true, fichier: fileInput.files[0].name, donnees });
 
   } finally {
     setLoading('verify', false);
@@ -353,7 +366,106 @@ function hexAleatoire(longueur) {
 
 
 /* ================================================================
-   9. DRAG & DROP
+   9. HISTORIQUE DES ACTIONS
+   ----------------------------------------------------------------
+   Stocke en mémoire les opérations effectuées (certifications et
+   vérifications) et les affiche dans le panneau dédié.
+   ajouterHistorique() est appelé depuis submitCertify/submitVerify.
+================================================================ */
+
+// Tableau des entrées (stocké en mémoire, réinitialisé au rechargement)
+const historique = [];
+
+/* Filtre actif : 'all', 'certify' ou 'verify' */
+let filtreActif = 'all';
+
+/* Ajoute une entrée dans l'historique et met à jour le badge de l'onglet */
+function ajouterHistorique(entree) {
+  entree.horodatage = new Date().toLocaleString('fr-FR');
+  historique.unshift(entree); // insère en tête pour l'ordre chronologique inverse
+  mettreAJourBadgeHistorique();
+}
+
+/* Met à jour le compteur affiché dans l'onglet */
+function mettreAJourBadgeHistorique() {
+  const tab = document.getElementById('tab-history');
+  const n = historique.length;
+  tab.textContent = '⧖  Historique' + (n > 0 ? ' (' + n + ')' : '');
+}
+
+/* Filtre les entrées et rafraîchit l'affichage */
+function filterHistory(filtre, bouton) {
+  filtreActif = filtre;
+  document.querySelectorAll('.hist-filter').forEach(b => b.classList.remove('active'));
+  bouton.classList.add('active');
+  renderHistory();
+}
+
+/* Vide l'historique après confirmation */
+function clearHistory() {
+  if (!historique.length) return;
+  if (confirm('Vider tout l\'historique des opérations ?')) {
+    historique.length = 0;
+    mettreAJourBadgeHistorique();
+    renderHistory();
+  }
+}
+
+/* Génère le HTML du panneau historique */
+function renderHistory() {
+  const liste = document.getElementById('hist-list');
+  const compteur = document.getElementById('hist-count');
+  const filtrees = filtreActif === 'all'
+    ? historique
+    : historique.filter(e => e.type === filtreActif);
+
+  compteur.textContent = filtrees.length + ' opération' + (filtrees.length !== 1 ? 's' : '');
+
+  if (!filtrees.length) {
+    liste.innerHTML = '<div class="hist-empty">Aucune opération enregistrée pour le moment.<br>Certifiez ou vérifiez un média pour commencer.</div>';
+    return;
+  }
+
+  liste.innerHTML = filtrees.map(function(e) {
+    let badgeClass = '', badgeLabel = '', detail = '';
+
+    if (e.type === 'certify' && e.succes) {
+      badgeClass = 'certify';
+      badgeLabel = '✓ Certifié';
+      detail = '<div class="hist-hash">' + (e.donnees.hash || '') + '</div>'
+             + '<div>Score : ' + ((e.donnees.score * 100).toFixed(1)) + ' % &nbsp;·&nbsp; tx_id : ' + (e.donnees.tx_id || '—') + '</div>';
+    } else if (e.type === 'verify' && e.succes && e.donnees.valide) {
+      badgeClass = 'verify-ok';
+      badgeLabel = '✓ Authentique';
+      detail = '<div class="hist-hash">' + (e.donnees.hash || '') + '</div>'
+             + '<div>Hash correspondant trouvé dans la blockchain</div>';
+    } else if (e.type === 'verify' && e.succes && !e.donnees.valide) {
+      badgeClass = 'verify-fail';
+      badgeLabel = '⚠ Inconnu / Modifié';
+      detail = '<div class="hist-hash">' + (e.donnees.hash || '') + '</div>'
+             + '<div>Aucune correspondance trouvée dans la blockchain</div>';
+    } else {
+      badgeClass = 'hist-error';
+      badgeLabel = '✕ Erreur';
+      detail = '<div>' + (e.message || 'Erreur inconnue') + '</div>';
+    }
+
+    return `
+      <div class="hist-item">
+        <div class="hist-item-head">
+          <span class="hist-badge ${badgeClass}">${badgeLabel}</span>
+          <span class="hist-file">${e.fichier}</span>
+          <span class="hist-time">${e.horodatage}</span>
+        </div>
+        <div class="hist-detail">${detail}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+
+/* ================================================================
+   10. DRAG & DROP
    ----------------------------------------------------------------
    Permet de glisser-déposer un fichier directement sur la zone d'upload.
    dragover  → empêche le comportement par défaut (ouvrir le fichier)

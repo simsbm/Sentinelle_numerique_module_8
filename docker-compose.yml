@@ -67,12 +67,12 @@ services:
       dockerfile: Dockerfile
     container_name: hash-service
     ports:
-      - "8082:8082"
+      - "8081:8081"
     networks:
       - sentinelle-network
     restart: unless-stopped              # redémarre automatiquement si crash
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -92,7 +92,7 @@ services:
       dockerfile: Dockerfile
     container_name: ledger-service
     ports:
-      - "8081:8081"
+      - "8082:8082"
     environment:
       # Ces variables viennent du .env.example du ledger-service
       # IMPORTANT : dans Docker, on remplace 127.0.0.1 par le nom du service "ganache"
@@ -124,7 +124,7 @@ services:
       - "8083:8083"    # ⚠ À MODIFIER si le vrai port dans le Dockerfile est différent
     environment:
       - BLOCKCHAIN_RPC_URL=http://ganache:7545
-      - LEDGER_SERVICE_URL=http://ledger-service:8081
+      - LEDGER_SERVICE_URL=http://ledger-service:8082
     depends_on:
       - ledger-service
       - hash-service
@@ -149,7 +149,7 @@ services:
     ports:
       - "8084:8084"    # ⚠ À MODIFIER si le vrai port dans le Dockerfile est différent
     environment:
-      - LEDGER_SERVICE_URL=http://ledger-service:8081
+      - LEDGER_SERVICE_URL=http://ledger-service:8082
     depends_on:
       - ledger-service
     networks:
@@ -191,7 +191,7 @@ services:
   dashboard:
     build:
       context: ./dashboard               # dossier contenant index.html, style.css, script.js
-      dockerfile: Dockerfile.dashboard   # Dockerfile spécial pour le dashboard (voir ci-dessous)
+      dockerfile: Dockerfile   # Dockerfile spécial pour le dashboard (voir ci-dessous)
     container_name: dashboard
     ports:
       - "80:80"                          # http://localhost → ouvre le dashboard

@@ -18,8 +18,8 @@ def get_web3():
 
 
 def get_contract(w3):
-    with open("MediaCertifierABI.json") as f:
-        abi = json.load(f)
+    with open("abi.json") as f:
+        abi = json.load(f)["abi"]
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=abi)
     return contract
 
@@ -48,7 +48,7 @@ def register(media: Media):
             "gasPrice": w3.to_wei("50", "gwei")
         })
         signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         return {"tx_id": tx_hash.hex(), "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la transaction: {str(e)}")

@@ -25,7 +25,7 @@
         <span class="logo-dot"></span>
         <h1>Sentinelle <span>Numérique</span></h1>
       </div>
-      <p class="subtitle">// Module Blockchain d'Intégrité </p>
+      <p class="subtitle"> Module Blockchain d'Intégrité </p>
     </header>
 
 
@@ -36,8 +36,8 @@
     ====================================================== -->
     <div class="tabs">
       <!-- onclick appelle switchTab() défini dans script.js -->
-      <button class="tab active" onclick="switchTab('certify')">⬡  Certifier un média</button>
-      <button class="tab"        onclick="switchTab('verify')">◈  Vérifier un média</button>
+      <button class="tab active" onclick="switchTab('certify')">  Certifier un média</button>
+      <button class="tab"        onclick="switchTab('verify')">  Vérifier un média</button>
     </div>
 
 
@@ -49,12 +49,7 @@
     ====================================================== -->
     <div class="panel active" id="panel-certify">
 
-      <div class="info-box">
-        <strong>// CERTIFICATION</strong>
-        Soumet un média analysé à la blockchain. Le service calcule son empreinte
-        <strong>SHA-256</strong> et l'inscrit dans un <strong>Smart Contract Ganache/Eth</strong>.
-        Le certificat retourné contient le <strong>tx_id</strong>, le <strong>hash</strong> et le <strong>timestamp</strong>.
-      </div>
+      
 
       <div class="card">
         <div class="card-title">Fichier média à certifier</div>
@@ -73,16 +68,16 @@
         <!-- Score fourni normalement par G1-G7, saisi manuellement pour la démo -->
         <div class="field-group">
           <label class="field-label" for="score-input">
-            Score d'analyse (fourni par les moteurs G1-G7)
+            Score d'analyse
           </label>
           <input class="field-input" type="number" id="score-input"
                  min="0" max="1" step="0.01"
-                 placeholder="ex: 0.87  (valeur entre 0 et 1)">
+                 placeholder="valeur entre 0 et 1">
         </div>
 
         <!-- Bouton qui déclenche submitCertify() dans script.js -->
         <button class="btn" id="btn-certify" onclick="submitCertify()">
-          ⬡  Lancer la certification
+           Lancer la certification
         </button>
 
         <!-- Loader caché par défaut, visible pendant l'appel API -->
@@ -109,12 +104,7 @@
     ====================================================== -->
     <div class="panel" id="panel-verify">
 
-      <div class="info-box">
-        <strong>// VÉRIFICATION</strong>
-        Recalcule le <strong>SHA-256</strong> du fichier soumis et interroge la blockchain.
-        Si le hash est trouvé → média <strong>authentique</strong>.
-        Sinon → <strong>alerte : média modifié ou inconnu</strong>.
-      </div>
+    
 
       <div class="card">
         <div class="card-title">Fichier média à vérifier</div>
@@ -130,7 +120,7 @@
         </div>
 
         <button class="btn verify" id="btn-verify" onclick="submitVerify()">
-          ◈  Vérifier l'intégrité
+            Vérifier l'intégrité
         </button>
 
         <div class="loader" id="loader-verify">
@@ -149,7 +139,7 @@
 
     <!-- PIED DE PAGE -->
     <footer>
-      <span>SENTINELLE NUMÉRIQUE · GROUPE 8 · MODULE BLOCKCHAIN D'INTÉGRITÉ</span>
+      <span>SENTINELLE NUMÉRIQUE</span>
       <span>SUP'PTIC · 2026</span>
     </footer>
 

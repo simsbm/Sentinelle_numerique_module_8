@@ -1,18 +1,4 @@
-"""
-audit-service — Sentinelle Numérique (Groupe 8)
-Port : 8084
 
-Rôle : Journal de toutes les certifications et vérifications effectuées
-       par la plateforme Sentinelle Numérique.
-
-Stockage : Fichier JSON local (audit.json) — sans base de données.
-
-Endpoints :
-  - POST /log  : Enregistrer une entrée d'audit
-  - GET  /audit : Lister toutes les entrées (triées par timestamp décroissant)
-
-Auteur : Groupe 8 — Blockchain d'Intégrité
-"""
 
 import json
 import logging
@@ -23,38 +9,34 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-# ─────────────────────────────────────────────────────────────
 # Configuration du logger
-# ─────────────────────────────────────────────────────────────
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [audit-service] %(levelname)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────────────────────
 # Chemin du fichier de journal JSON
-# ─────────────────────────────────────────────────────────────
+
 AUDIT_FILE = Path("audit.json")
 
 
 app = FastAPI(
-    title="Audit Service — Sentinelle Numérique",
+    title="Audit Service Sentinelle Numérique",
     description="Journal des certifications et vérifications de la plateforme",
     version="1.0.0"
 )
 
 
-# ─────────────────────────────────────────────────────────────
 # Modèles Pydantic
-# ─────────────────────────────────────────────────────────────
 
 class LogEntry(BaseModel):
     """Entrée d'audit à enregistrer."""
     media_id: str
     hash: str
     tx_id: str
-    action: str       # Ex: "CERTIFICATION", "VERIFICATION", "ECHEC_TRANSACTION"
+    action: str       
     timestamp: Optional[str] = None  # ISO 8601 — auto-généré si absent
 
 
@@ -65,20 +47,13 @@ class LogResponse(BaseModel):
     entry_id: int     # Index de l'entrée dans le fichier JSON
 
 
-# ─────────────────────────────────────────────────────────────
+
 # Fonctions utilitaires de lecture/écriture du fichier audit.json
-# ─────────────────────────────────────────────────────────────
 
 def _lire_journal() -> list[dict]:
-    """
-    Lit le fichier audit.json et retourne la liste des entrées.
-    Si le fichier n'existe pas, retourne une liste vide.
 
-    Returns:
-        Liste des entrées d'audit sous forme de dictionnaires
-    """
     if not AUDIT_FILE.exists():
-        logger.debug("audit.json non trouvé — initialisation avec liste vide")
+        logger.debug("audit.json non trouvé,  initialisation avec liste vide")
         return []
 
     try:
@@ -93,26 +68,19 @@ def _lire_journal() -> list[dict]:
 
 
 def _ecrire_journal(entries: list[dict]) -> None:
-    """
-    Écrit la liste des entrées dans audit.json.
-
-    Args:
-        entries : Liste complète des entrées à persister
-    """
+    
     AUDIT_FILE.write_text(
         json.dumps(entries, ensure_ascii=False, indent=2),
         encoding="utf-8"
     )
-    logger.debug(f"audit.json mis à jour — {len(entries)} entrée(s)")
+    logger.debug(f"audit.json mis à jour  {len(entries)} entrée(s)")
 
 
-# ─────────────────────────────────────────────────────────────
 # Endpoints
-# ─────────────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health_check():
-    """Endpoint de santé pour Docker/orchestrateur."""
+    
     nb_entrees = len(_lire_journal())
     return {
         "status": "ok",
@@ -125,18 +93,7 @@ async def health_check():
 
 @app.post("/log", response_model=LogResponse)
 async def enregistrer_log(entry: LogEntry):
-    """
-    Enregistre une nouvelle entrée dans le journal d'audit.
-
-    Si le timestamp n'est pas fourni, il est généré automatiquement
-    au moment de la réception de la requête (UTC).
-
-    Args:
-        entry : L'entrée d'audit à enregistrer
-
-    Returns:
-        LogResponse confirmant l'enregistrement avec l'index de l'entrée
-    """
+    
     # Générer le timestamp automatiquement si absent
     if not entry.timestamp:
         entry.timestamp = datetime.now(timezone.utc).isoformat()
@@ -165,7 +122,7 @@ async def enregistrer_log(entry: LogEntry):
         raise HTTPException(status_code=500, detail=f"Erreur d'écriture du journal: {str(e)}")
 
     logger.info(
-        f"✅ Log enregistré — action={entry.action}, "
+        f"Log enregistré  action={entry.action}, "
         f"media_id={entry.media_id}, "
         f"hash={entry.hash[:16]}..., "
         f"tx_id={entry.tx_id}"
@@ -180,13 +137,7 @@ async def enregistrer_log(entry: LogEntry):
 
 @app.get("/audit")
 async def lister_audit():
-    """
-    Retourne la liste complète des entrées du journal d'audit,
-    triées par timestamp décroissant (plus récent en premier).
-
-    Returns:
-        Dictionnaire avec le nombre total d'entrées et la liste triée
-    """
+    
     journal = _lire_journal()
 
     # Trier par timestamp décroissant (ISO 8601 est triable lexicographiquement)
@@ -196,7 +147,7 @@ async def lister_audit():
         reverse=True
     )
 
-    logger.info(f"Consultation du journal — {len(journal_trie)} entrée(s) retournée(s)")
+    logger.info(f"Consultation du journal {len(journal_trie)} entrée(s) retournée(s)")
 
     return {
         "total": len(journal_trie),
@@ -206,16 +157,7 @@ async def lister_audit():
 
 @app.get("/audit/{media_id}")
 async def lister_audit_par_media(media_id: str):
-    """
-    Retourne toutes les entrées d'audit pour un media_id spécifique.
-    Utile pour tracer l'historique complet d'un média particulier.
-
-    Args:
-        media_id : Identifiant du média à rechercher
-
-    Returns:
-        Liste des entrées liées à ce media_id, triées par timestamp décroissant
-    """
+    
     journal = _lire_journal()
 
     # Filtrer les entrées pour ce media_id

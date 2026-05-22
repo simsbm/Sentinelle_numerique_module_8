@@ -1,18 +1,3 @@
-"""
-verify-service — Sentinelle Numérique (Groupe 8)
-Port : 8083
-
-Rôle : Vérifier l'intégrité d'un média en comparant son hash actuel
-       avec celui inscrit sur la blockchain (via ledger-service).
-
-Flux :
-  1. Reçoit le rapport JSON du média à vérifier
-  2. Appelle hash-service pour recalculer le hash SHA-256 du JSON
-  3. Appelle ledger-service pour comparer avec le hash stocké en blockchain
-  4. Retourne un statut d'authenticité
-
-Auteur : Groupe 8 — Blockchain d'Intégrité
-"""
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -25,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [verify-service] %(l
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Verify Service — Sentinelle Numérique",
+    title="Verify Service",
     description="Service de vérification d'intégrité des médias via blockchain",
     version="1.0.0"
 )
@@ -39,12 +24,12 @@ HTTP_TIMEOUT = 10.0
 
 
 class VerifyRequest(BaseModel):
-    """Corps de la requête de vérification."""
+    #Corps de la requête de vérification.
     rapport_json: dict[str, Any]
 
 
 class VerifyResponse(BaseModel):
-    """Réponse de vérification d'intégrité."""
+    #Réponse de vérification d'intégrité.
     valid: bool
     message: str
     certified_at: str | None = None
@@ -52,45 +37,23 @@ class VerifyResponse(BaseModel):
     tx_id: str | None = None
 
 
-@app.get("/health")
-async def health_check():
-    """Endpoint de santé pour Docker/orchestrateur."""
-    return {"status": "ok", "service": "verify-service", "port": 8083}
 
 
 @app.post("/verify/{media_id}", response_model=VerifyResponse)
 async def verify_media(media_id: str, body: VerifyRequest):
-    """
-    Vérifie l'intégrité d'un média identifié par media_id.
-
-    Étapes :
-      1. Appel à hash-service pour recalculer le hash SHA-256 du rapport JSON
-      2. Appel à ledger-service pour interroger la blockchain
-      3. Retour du statut d'authenticité
-
-    Args:
-        media_id : Identifiant unique du média à vérifier
-        body     : Contient le rapport JSON du média
-
-    Returns:
-        VerifyResponse avec valid=True si le média est authentique, False sinon
-    """
+    
     logger.info(f"Vérification demandée pour media_id={media_id}")
 
-    # ─────────────────────────────────────────────────────────────────────
-    # ÉTAPE 1 : Recalculer le hash SHA-256 via hash-service
-    # ─────────────────────────────────────────────────────────────────────
-    hash_actuel = await _appeler_hash_service(body.rapport_json)
+    # calcul du hash du rapport JSON via hash-service
+    hash_actuel = await _appeler_hash_service(body.rapport_json, media_id)
 
-    # ─────────────────────────────────────────────────────────────────────
-    # ÉTAPE 2 : Comparer le hash avec la blockchain via ledger-service
-    # ─────────────────────────────────────────────────────────────────────
+    
+    # Comparer le hash avec la blockchain via ledger-service
+    
     resultat = await _appeler_ledger_service(media_id, hash_actuel)
 
-    # ─────────────────────────────────────────────────────────────────────
-    # ÉTAPE 3 : Construire la réponse finale
-    # ─────────────────────────────────────────────────────────────────────
-    if resultat.get("match"):
+    # Reponse
+    if resultat.get("valid"):
         logger.info(f"✅ media_id={media_id} — Média AUTHENTIQUE")
         return VerifyResponse(
             valid=True,
@@ -100,7 +63,7 @@ async def verify_media(media_id: str, body: VerifyRequest):
             tx_id=resultat.get("tx_id")
         )
     else:
-        logger.warning(f"⚠️  media_id={media_id} — Média MODIFIÉ ou INCONNU")
+        logger.warning(f"media_id={media_id}: Média MODIFIÉ ou INCONNU")
         return VerifyResponse(
             valid=False,
             message="Alerte : média modifié ou inconnu",
@@ -108,22 +71,11 @@ async def verify_media(media_id: str, body: VerifyRequest):
         )
 
 
-async def _appeler_hash_service(rapport_json: dict) -> str:
-    """
-    Appelle hash-service pour calculer le hash SHA-256 du rapport JSON.
-
-    Args:
-        rapport_json : Le rapport JSON à hacher
-
-    Returns:
-        Le hash SHA-256 sous forme de chaîne hexadécimale
-
-    Raises:
-        HTTPException 502 si hash-service est inaccessible
-    """
+async def _appeler_hash_service(rapport_json: dict, media_id: str) -> str:
+    
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            logger.info(f"→ Appel hash-service: POST {HASH_SERVICE_URL}/hash")
+            logger.info(f"Appel hash-service: POST {HASH_SERVICE_URL}/hash")
             response = await client.post(
                 f"{HASH_SERVICE_URL}/hash",
                 json=rapport_json
@@ -131,7 +83,7 @@ async def _appeler_hash_service(rapport_json: dict) -> str:
             response.raise_for_status()
             data = response.json()
             hash_value = data.get("hash")
-            logger.info(f"← hash-service a retourné le hash: {hash_value[:16]}...")
+            logger.info(f"hash-service a retourné le hash: {hash_value[:16]}...")
             return hash_value
 
     except httpx.ConnectError:
@@ -149,19 +101,7 @@ async def _appeler_hash_service(rapport_json: dict) -> str:
 
 
 async def _appeler_ledger_service(media_id: str, hash_actuel: str) -> dict:
-    """
-    Appelle ledger-service pour comparer le hash avec celui stocké en blockchain.
 
-    Args:
-        media_id    : Identifiant du média à vérifier
-        hash_actuel : Hash SHA-256 recalculé du rapport
-
-    Returns:
-        Dictionnaire avec { match: bool, certified_at: str, tx_id: str }
-
-    Raises:
-        HTTPException 502 si ledger-service est inaccessible
-    """
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
             url = f"{LEDGER_SERVICE_URL}/verify/{media_id}"
@@ -171,14 +111,14 @@ async def _appeler_ledger_service(media_id: str, hash_actuel: str) -> dict:
                 params={"hash": hash_actuel}
             )
 
-            # 404 = média jamais certifié → pas une erreur serveur
+            
             if response.status_code == 404:
-                logger.info(f"← ledger-service: media_id={media_id} non trouvé en blockchain")
+                logger.info(f"ledger-service: media_id={media_id} non trouvé en blockchain")
                 return {"match": False}
 
             response.raise_for_status()
             data = response.json()
-            logger.info(f"← ledger-service: match={data.get('match')}")
+            logger.info(f"ledger-service: match={data.get('match')}")
             return data
 
     except httpx.ConnectError:
@@ -193,3 +133,7 @@ async def _appeler_ledger_service(media_id: str, hash_actuel: str) -> dict:
     except Exception as e:
         logger.error(f"Erreur inattendue lors de l'appel à ledger-service: {e}")
         raise HTTPException(status_code=502, detail=f"Erreur ledger-service: {str(e)}")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "verify-service", "port": 8083}

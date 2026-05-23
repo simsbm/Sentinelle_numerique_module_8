@@ -4,6 +4,7 @@ import hashlib
 import json
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi import HTTPException
 
@@ -14,6 +15,15 @@ app = FastAPI(
     title="Hash Service Sentinelle Numérique",
     description="Calcule l'empreinte SHA-256 d'un rapport JSON .",
     version="1.0.0",
+)
+
+# Ajouter CORS pour permettre les appels du dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Autoriser tous les domaines
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -17,11 +17,16 @@
 /* ================================================================
    1. CONFIGURATION
    ----------------------------------------------------------------
-   C'est ICI qu'on change l'URL quand le backend est prêt.
-   En développement local avec Docker : http://localhost:80/api
-   Si l'API Gateway tourne sur un autre port, changer ici.
+   URLs des services — le dashboard les appelle directement.
+   Hash-service  : port 8081
+   Ledger-service: port 8082
+   Verify-service: port 8083
+   Audit-service : port 8084
 ================================================================ */
-const API_BASE = 'http://localhost:80/api';
+const HASH_SERVICE_URL = 'http://localhost:8081';
+const LEDGER_SERVICE_URL = 'http://localhost:8082';
+const VERIFY_SERVICE_URL = 'http://localhost:8083';
+const AUDIT_SERVICE_URL = 'http://localhost:8084';
 
 
 /* ================================================================
@@ -100,23 +105,42 @@ async function submitCertify() {
   formData.append('score', score);                // le score d'analyse
 
   try {
-    // Appel à l'API Gateway → redirigé vers le service-blockchain (G8)
-    const reponse = await fetch(API_BASE + '/certifier', {
+    // 1. Calcul du hash via hash-service
+    const hashResp = await fetch(HASH_SERVICE_URL + '/hash', {
       method: 'POST',
-      body: formData
-      // NE PAS mettre Content-Type manuellement avec FormData
-      // Le navigateur le gère automatiquement avec le bon "boundary"
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rapport_json: { fichier: fileInput.files[0].name, score: score },
+        media_id: 'media_' + Date.now()
+      })
     });
 
-    const donnees = await reponse.json();
+    if (!hashResp.ok) throw new Error('Erreur hash-service');
+    const hashData = await hashResp.json();
 
-    if (reponse.ok) {
-      // Succès : affiche tx_id, hash, score, timestamp
-      afficherCertificationReussie(donnees);
-    } else {
-      // Erreur métier retournée par le serveur
-      afficherCertificationEchec(donnees.message || 'Erreur serveur inconnue.');
-    }
+    // 2. Enregistrement dans la blockchain via ledger-service
+    const ledgerResp = await fetch(LEDGER_SERVICE_URL + '/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        media_id: hashData.media_id,
+        hash: hashData.hash,
+        score: score,
+        timestamp: new Date().toISOString()
+      })
+    });
+
+    if (!ledgerResp.ok) throw new Error('Erreur ledger-service');
+    const ledgerData = await ledgerResp.json();
+
+    // 3. Affichage du résultat
+    afficherCertificationReussie({
+      tx_id: ledgerData.tx_id,
+      hash: hashData.hash,
+      score: score,
+      timestamp: new Date().toISOString(),
+      media_id: hashData.media_id
+    });
 
   } catch (erreur) {
     // Le backend n'est pas encore disponible → mode démo
@@ -157,18 +181,35 @@ async function submitVerify() {
   formData.append('fichier', fileInput.files[0]);
 
   try {
-    const reponse = await fetch(API_BASE + '/verifier', {
+    // 1. Calcul du hash via hash-service
+    const hashResp = await fetch(HASH_SERVICE_URL + '/hash', {
       method: 'POST',
-      body: formData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rapport_json: { fichier: fileInput.files[0].name },
+        media_id: 'verify_' + Date.now()
+      })
     });
 
-    const donnees = await reponse.json();
+    if (!hashResp.ok) throw new Error('Erreur hash-service');
+    const hashData = await hashResp.json();
 
-    if (reponse.ok) {
-      afficherResultatVerification(donnees);
-    } else {
-      afficherErreurVerification(donnees.message || 'Erreur serveur inconnue.');
-    }
+    // 2. Vérification via verify-service (ou ledger-service)
+    const verifyResp = await fetch(
+      LEDGER_SERVICE_URL + '/verify/' + hashData.media_id + '?hash=' + encodeURIComponent(hashData.hash),
+      { method: 'GET' }
+    );
+
+    if (!verifyResp.ok) throw new Error('Erreur verify-service');
+    const verifyData = await verifyResp.json();
+
+    // 3. Affichage du résultat
+    afficherResultatVerification({
+      valide: verifyData.valid,
+      hash: hashData.hash,
+      timestamp: new Date().toISOString(),
+      media_id: hashData.media_id
+    });
 
   } catch (erreur) {
     // Mode démo si le backend n'est pas prêt

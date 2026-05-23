@@ -10,7 +10,7 @@
 #   ledger-service   → inscrit les hashs dans la blockchain (port 8081)
 #   verify-service   → vérifie l'intégrité d'un média (port 8083 à confirmer)
 #   audit-service    → logs et historique des certifications (port 8084 à confirmer)
-#   dashboard        → interface web visible par M. SASSA (port 80)
+#   dashboard        → interface web visible (port 80)
 #
 # ORDRE DE DÉMARRAGE (depends_on) :
 #   ganache démarre en premier (la blockchain doit exister avant les services)
@@ -186,7 +186,6 @@ services:
   # C'est TON travail. Sert les fichiers HTML/CSS/JS statiques.
   # Utilise nginx (serveur web léger) pour servir index.html.
   # Port 80 : port HTTP standard → accessible sur http://localhost
-  # C'est la page que M. SASSA ouvrira dans son navigateur.
   # ==============================================================
   dashboard:
     build:

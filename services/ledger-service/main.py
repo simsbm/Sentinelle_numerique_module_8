@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from web3 import Web3
 import json, os
@@ -21,9 +22,19 @@ def get_contract(w3):
     with open("abi.json") as f:
         abi = json.load(f)["abi"]
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=abi)
+    h.contract(address=CONTRACT_ADDRESS, abi=abi)
     return contract
 
 app = FastAPI(title="Ledger Service")
+
+# Ajouter CORS pour permettre les appels du dashboard
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Autoriser tous les domaines
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Media(BaseModel):
     media_id: str
@@ -48,7 +59,7 @@ def register(media: Media):
             "gasPrice": w3.to_wei("50", "gwei")
         })
         signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         return {"tx_id": tx_hash.hex(), "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la transaction: {str(e)}")

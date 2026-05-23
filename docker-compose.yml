@@ -6,8 +6,8 @@
 #
 # ARCHITECTURE :
 #   ganache          → blockchain Ethereum locale (port 7545)
-#   hash-service     → calcule le SHA-256 des fichiers (port 8082)
-#   ledger-service   → inscrit les hashs dans la blockchain (port 8081)
+#   hash-service     → calcule le SHA-256 des fichiers (port 8081)
+#   ledger-service   → inscrit les hashs dans la blockchain (port 8082)
 #   verify-service   → vérifie l'intégrité d'un média (port 8083 à confirmer)
 #   audit-service    → logs et historique des certifications (port 8084 à confirmer)
 #   dashboard        → interface web visible par M. SASSA (port 80)
@@ -18,8 +18,6 @@
 #   les autres services attendent ledger-service
 #   dashboard démarre en dernier
 # ================================================================
-
-version: '3.8'
 
 services:
 
@@ -40,7 +38,6 @@ services:
       --port 7545
       --networkId 5777
       --accounts 10
-      --deterministic
       --mnemonic "sentinelle numerique groupe huit blockchain integrite sup ptic"
     # --deterministic : génère toujours les mêmes comptes (adresses prévisibles)
     # --mnemonic      : phrase secrète fixe → adresses identiques à chaque redémarrage
@@ -48,7 +45,7 @@ services:
       - sentinelle-network
     healthcheck:
       # Vérifie que Ganache répond avant de démarrer les autres services
-      test: ["CMD", "curl", "-f", "http://localhost:7545"]
+      test: ["CMD-SHELL", "node -e \"const http=require('http'); const req=http.get('http://127.0.0.1:7545', res => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1));\""]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -72,7 +69,7 @@ services:
       - sentinelle-network
     restart: unless-stopped              # redémarre automatiquement si crash
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request, sys; resp = urllib.request.urlopen('http://127.0.0.1:8081/health'); sys.exit(0 if resp.status == 200 else 1)\""]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -102,7 +99,7 @@ services:
       - PRIVATE_KEY=${PRIVATE_KEY:-}             # clé privée du compte Ganache
     depends_on:
       ganache:
-        condition: service_healthy               # attend que Ganache soit prêt
+        condition: service_started               # attend que Ganache soit lancé
     networks:
       - sentinelle-network
     restart: unless-stopped
@@ -183,18 +180,17 @@ services:
   # ==============================================================
   # DASHBOARD — Interface Web
   # --------------------------------------------------------------
-  # C'est TON travail. Sert les fichiers HTML/CSS/JS statiques.
-  # Utilise nginx (serveur web léger) pour servir index.html.
+  # Sert les fichiers HTML/CSS/JS statiques via Nginx.
   # Port 80 : port HTTP standard → accessible sur http://localhost
-  # C'est la page que M. SASSA ouvrira dans son navigateur.
+  # Le dashboard appelle directement les services (pas de proxy).
   # ==============================================================
   dashboard:
     build:
-      context: ./dashboard               # dossier contenant index.html, style.css, script.js
-      dockerfile: Dockerfile   # Dockerfile spécial pour le dashboard (voir ci-dessous)
+      context: ./dashboard
+      dockerfile: Dockerfile
     container_name: dashboard
     ports:
-      - "80:80"                          # http://localhost → ouvre le dashboard
+      - "80:80"
     depends_on:
       - hash-service
       - ledger-service

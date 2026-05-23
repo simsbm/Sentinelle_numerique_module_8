@@ -201,11 +201,13 @@ h1 span { color: var(--accent); }
 .tab.active {
   background: rgba(0,212,255,0.08);
   color: #050a0e;
+  border: 1px solid black;
 }
 
 /* Ligne bleue en bas de l'onglet actif */
 .tab.active::after {
   content: '';
+  border-right: #050a0e;
   position: absolute;
   bottom: 0;
   left: 0;

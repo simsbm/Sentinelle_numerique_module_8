@@ -21,7 +21,7 @@ def get_web3():
 def get_contract(w3):
     with open("abi.json") as f:
         abi = json.load(f)["abi"]
-    contract = w3.etwxc*ty;:
+    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=abi)
     h.contract(address=CONTRACT_ADDRESS, abi=abi)
     return contract
 
